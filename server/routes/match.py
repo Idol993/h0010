@@ -1,12 +1,18 @@
 from typing import List, Optional, Dict, Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Body
+from pydantic import BaseModel
 
 from server.models import MatchResponse
 from server.services.matcher import matcher
 from server import db
 
 router = APIRouter(prefix="/api/match", tags=["match"])
+
+
+class CompareRequest(BaseModel):
+    job_ids: List[int]
+    resume_id: Optional[int] = None
 
 
 def _paginate(items, page: int, page_size: int):
@@ -54,10 +60,9 @@ def match_job(
 
 
 @router.post("/compare")
-def compare_jobs(
-    job_ids: List[int] = Query(...),
-    resume_id: Optional[int] = Query(None),
-):
+def compare_jobs(req: CompareRequest):
+    job_ids = req.job_ids
+    resume_id = req.resume_id
     if len(job_ids) < 2 or len(job_ids) > 3:
         raise HTTPException(status_code=400, detail="必须同时选择2-3个岗位")
     jobs = []

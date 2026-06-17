@@ -128,7 +128,7 @@ class MatcherEngine:
         return matched[:top_n]
 
     @staticmethod
-    def _highlight_snippets(r: Resume, jd: JobDescription, top_n: int = 3) -> List[str]:
+    def _highlight_snippets(r: Resume, jd: JobDescription, top_skills: Optional[List[SkillItem]] = None, top_n: int = 3) -> List[str]:
         if not r.raw_text:
             return []
         highlight_words = set()
@@ -137,8 +137,18 @@ class MatcherEngine:
             canon = skill_dict.normalize(s.skill)
             if canon:
                 highlight_words.add(canon.lower())
-        for rs in r.skills:
-            highlight_words.add(rs.name.lower())
+                syns = [x.lower() for x in skill_dict._canonical_to_synonyms.get(canon, [])]
+                highlight_words.update(syns)
+        if top_skills:
+            for ts in top_skills:
+                highlight_words.add(ts.name.lower())
+                canon = skill_dict.normalize(ts.name)
+                if canon:
+                    highlight_words.add(canon.lower())
+                    syns = [x.lower() for x in skill_dict._canonical_to_synonyms.get(canon, [])]
+                    highlight_words.update(syns)
+        if jd.required_education:
+            highlight_words.add(jd.required_education.lower())
         if not highlight_words:
             return []
         sentences = re.split(r"[。.!?！？\n]+", r.raw_text)
@@ -185,13 +195,14 @@ class MatcherEngine:
             famous_company_bonus=3.0 if famous else 0.0,
             total=total,
         )
+        top_skills = self._top_matching_skills(r, jd)
         return MatchResult(
             resume=r,
             score=total,
             rank=rank,
             score_breakdown=breakdown,
-            top_skills=self._top_matching_skills(r, jd),
-            highlighted_snippets=self._highlight_snippets(r, jd),
+            top_skills=top_skills,
+            highlighted_snippets=self._highlight_snippets(r, jd, top_skills=top_skills),
         )
 
     def match_all(self, resumes: List[Resume], jd: JobDescription,

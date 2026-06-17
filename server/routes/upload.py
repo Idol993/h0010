@@ -11,7 +11,7 @@ from server import db
 router = APIRouter(prefix="/api/upload", tags=["upload"])
 
 MAX_SIZE = 10 * 1024 * 1024
-ALLOWED_EXT = {".pdf", ".doc", ".docx", ".txt", ".md", ".text"}
+ALLOWED_EXT = {".pdf", ".docx", ".txt", ".md", ".text"}
 
 
 @router.post("", response_model=ResumeParseResponse)

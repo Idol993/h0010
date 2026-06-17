@@ -32,14 +32,18 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
   const [compareData, setCompareData] = useState<CompareItem[] | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
 
-  const loadMatch = async () => {
+  const loadMatch = async (targetPage?: number) => {
     if (!selectedJob) return;
+    const p = targetPage ?? page;
     setLoading(true);
     try {
       const { data } = await axios.get(`/api/match/${selectedJob}`, {
-        params: { page, page_size: pageSize },
+        params: { page: p, page_size: pageSize },
       });
       setData(data);
+      if (targetPage !== undefined) {
+        setPage(targetPage);
+      }
     } finally {
       setLoading(false);
     }
@@ -49,12 +53,9 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
     if (selectedCompare.length < 2) return;
     setLoading(true);
     try {
-      const { data } = await axios.get("/api/match/compare", {
-        params: {
-          job_ids: selectedCompare,
-          resume_id: selectedResume || undefined,
-        },
-        paramsSerializer: { indexes: null },
+      const { data } = await axios.post("/api/match/compare", {
+        job_ids: selectedCompare,
+        resume_id: selectedResume || null,
       });
       setCompareData(data.comparisons || []);
     } finally {
@@ -164,11 +165,8 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
                   {Array.from({ length: totalPages }).map((_, i) => (
                     <button
                       key={i}
-                      className={page === i + 1 ? "active" : ""}
-                      onClick={() => {
-                        setPage(i + 1);
-                        setTimeout(loadMatch, 0);
-                      }}
+                      className={data?.page === i + 1 ? "active" : ""}
+                      onClick={() => loadMatch(i + 1)}
                     >
                       {i + 1}
                     </button>

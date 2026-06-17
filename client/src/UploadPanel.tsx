@@ -20,7 +20,18 @@ export default function UploadPanel({ onUploaded }: Props) {
   const handleFiles = async (files: FileList | File[]) => {
     const arr = Array.from(files).filter((f) => {
       const ext = "." + (f.name.split(".").pop() || "").toLowerCase();
-      return [".pdf", ".doc", ".docx", ".txt", ".md", ".text"].includes(ext);
+      const allowed = [".pdf", ".docx", ".txt", ".md", ".text"];
+      if (ext === ".doc") {
+        const newItem: UploadState = {
+          name: f.name,
+          status: "error",
+          progress: 0,
+          error: "老版 Word .doc 格式暂不支持，请另存为 .docx 后再上传",
+        };
+        setItems((prev) => [...prev, newItem]);
+        return false;
+      }
+      return allowed.includes(ext);
     });
     if (arr.length === 0) return;
     const newItems: UploadState[] = arr.map((f) => ({
@@ -93,12 +104,12 @@ export default function UploadPanel({ onUploaded }: Props) {
         onClick={() => inputRef.current?.click()}
       >
         <div style={{ fontSize: 16, marginBottom: 8 }}>拖拽文件到此处 或 点击选择文件</div>
-        <div style={{ fontSize: 13 }}>支持 PDF / Word (doc, docx) / 纯文本，单个文件不超过 10MB</div>
+        <div style={{ fontSize: 13 }}>支持 PDF / Word (.docx) / 纯文本，老版 .doc 格式请转成 .docx 后上传，单个文件不超过 10MB</div>
         <input
           ref={inputRef}
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.txt,.md,.text"
+          accept=".pdf,.docx,.txt,.md,.text"
           style={{ display: "none" }}
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />
