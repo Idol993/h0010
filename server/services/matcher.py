@@ -153,14 +153,24 @@ class MatcherEngine:
         if not highlight_words:
             return []
         word_patterns = sorted(highlight_words.keys(), key=lambda x: -len(x))
-        regex_pattern = re.compile("|".join(rf"\b{re.escape(w)}\b" for w in word_patterns if w), re.IGNORECASE)
+
+        def _escape_for_regex(w: str) -> str:
+            return re.escape(w)
+
+        regex_pattern = re.compile(
+            "|".join(_escape_for_regex(w) for w in word_patterns if w),
+            re.IGNORECASE,
+        )
+
+        import html as _html
 
         def _mark(text: str) -> str:
+            safe = _html.escape(text)
             def _sub(m):
                 matched = m.group(0)
                 display = highlight_words.get(matched.lower(), matched)
-                return f'<span class="hl">{display}</span>'
-            return regex_pattern.sub(_sub, text)
+                return f'<span class="hl">{_html.escape(display)}</span>'
+            return regex_pattern.sub(_sub, safe)
 
         sentences = re.split(r"[。.!?！？\n]+", r.raw_text)
         scored: List[Tuple[int, str, str]] = []

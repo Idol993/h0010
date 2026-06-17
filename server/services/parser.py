@@ -57,7 +57,7 @@ def extract_text(file_bytes: bytes, filename: str) -> str:
     elif ext == ".docx":
         return _extract_text_from_docx(file_bytes)
     elif ext == ".doc":
-        raise ValueError("老版 Word .doc 格式暂不支持，请另存为 .docx 格式后上传")
+        raise ValueError("老版 Word .doc 格式暂不支持，请另存为 .docx 后再上传")
     elif ext in (".txt", ".md", ".text"):
         return _extract_text_from_txt(file_bytes)
     else:

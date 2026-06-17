@@ -63,11 +63,41 @@ def delete_job(job_id: int):
 
 
 @router.get("/skills/dict")
-def get_skill_dict():
+def get_skill_dict(
+    search: Optional[str] = Query(None, description="搜索关键词"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=500),
+    include_synonyms: bool = Query(True),
+):
     all_skills = skill_dict.all_canonical()
+    if search:
+        kw = search.lower().strip()
+        filtered = []
+        for s in all_skills:
+            if kw in s.lower():
+                filtered.append(s)
+            else:
+                syns = skill_dict._canonical_to_synonyms.get(s, [])
+                if any(kw in syn.lower() for syn in syns):
+                    filtered.append(s)
+    else:
+        filtered = all_skills
+    total = len(filtered)
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_items = filtered[start:end]
+    result = []
+    for s in page_items:
+        entry = {"canonical": s}
+        if include_synonyms:
+            entry["synonyms"] = skill_dict._canonical_to_synonyms.get(s, [])
+        result.append(entry)
     return {
+        "total": total,
         "total_canonical": len(all_skills),
-        "canonical": all_skills,
+        "page": page,
+        "page_size": page_size,
+        "items": result,
     }
 
 

@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import UploadPanel from "./UploadPanel";
 import MatchView from "./MatchView";
+import SkillDictPanel from "./SkillDictPanel";
 import { Resume, JobDescription } from "./types";
 
-type Tab = "upload" | "resumes" | "match" | "compare";
+type Tab = "upload" | "resumes" | "match" | "compare" | "skills";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("upload");
@@ -43,6 +44,7 @@ export default function App() {
           <button className={`tab ${tab === "resumes" ? "active" : ""}`} onClick={() => setTab("resumes")}>简历库 ({resumes.length})</button>
           <button className={`tab ${tab === "match" ? "active" : ""}`} onClick={() => setTab("match")}>岗位匹配</button>
           <button className={`tab ${tab === "compare" ? "active" : ""}`} onClick={() => setTab("compare")}>岗位对比</button>
+          <button className={`tab ${tab === "skills" ? "active" : ""}`} onClick={() => setTab("skills")}>技能词典</button>
         </div>
 
         {tab === "upload" && <UploadPanel onUploaded={onUploaded} />}
@@ -85,6 +87,8 @@ export default function App() {
         {tab === "compare" && (
           <MatchView mode="compare" jobs={jobs} resumes={resumes} onJobChanged={loadAll} />
         )}
+
+        {tab === "skills" && <SkillDictPanel />}
       </div>
     </div>
   );

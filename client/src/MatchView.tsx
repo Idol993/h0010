@@ -65,6 +65,23 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
     }
   };
 
+  const exportCompareCSV = async () => {
+    try {
+      const resp = await axios.post("/api/match/compare/export.csv", {
+        job_ids: selectedCompare,
+        resume_id: selectedResume || null,
+      }, { responseType: "blob" });
+      const url = window.URL.createObjectURL(new Blob([resp.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `compare_${selectedCompare.join("_")}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert("导出失败: " + (e?.response?.data?.detail || e.message));
+    }
+  };
+
   const activeJobs = jobs.filter((j) => j.is_active);
 
   const totalPages = useMemo(() => {
@@ -146,6 +163,14 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
               ))}
             </select>
             <button className="btn" onClick={loadMatch} disabled={!selectedJob || loading}>开始匹配</button>
+            {data && (
+              <button
+                className="btn secondary"
+                onClick={() => window.open(`/api/match/${selectedJob}/export.csv`, "_blank")}
+              >
+                导出 CSV
+              </button>
+            )}
           </div>
 
           {loading && <div className="empty">匹配中...</div>}
@@ -213,6 +238,14 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
             >
               开始对比
             </button>
+            {compareData && compareData.length > 0 && (
+              <button
+                className="btn secondary"
+                onClick={exportCompareCSV}
+              >
+                导出 CSV
+              </button>
+            )}
           </div>
           {loading && <div className="empty">对比计算中...</div>}
           {!loading && compareData && compareData.length > 0 && (

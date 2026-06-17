@@ -104,15 +104,15 @@ export default function UploadPanel({ onUploaded }: Props) {
         onClick={() => inputRef.current?.click()}
       >
         <div style={{ fontSize: 16, marginBottom: 8 }}>拖拽文件到此处 或 点击选择文件</div>
-        <div style={{ fontSize: 13 }}>支持 PDF / Word (.docx) / 纯文本，老版 .doc 格式请转成 .docx 后上传，单个文件不超过 10MB</div>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          accept=".pdf,.docx,.txt,.md,.text"
-          style={{ display: "none" }}
-          onChange={(e) => e.target.files && handleFiles(e.target.files)}
-        />
+      <div style={{ fontSize: 13 }}>支持 PDF / Word (.docx) / 纯文本；老版 Word .doc 格式暂不支持，请另存为 .docx 后再上传，单个文件不超过 10MB</div>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept=".pdf,.docx,.txt,.md,.text"
+        style={{ display: "none" }}
+        onChange={(e) => e.target.files && handleFiles(e.target.files)}
+      />
       </div>
       {items.length > 0 && (
         <div className="upload-list">
