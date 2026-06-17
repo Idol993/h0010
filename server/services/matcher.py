@@ -218,14 +218,39 @@ class MatcherEngine:
             total=total,
         )
         top_skills = self._top_matching_skills(r, jd)
+        snippets = self._highlight_snippets(r, jd, top_skills=top_skills)
+        reason = self._recommend_reason(total, top_skills, breakdown)
         return MatchResult(
             resume=r,
             score=total,
             rank=rank,
             score_breakdown=breakdown,
             top_skills=top_skills,
-            highlighted_snippets=self._highlight_snippets(r, jd, top_skills=top_skills),
+            highlighted_snippets=snippets,
+            recommend_reason=reason,
         )
+
+    @staticmethod
+    def _recommend_reason(total: float, top_skills: List[SkillItem], breakdown: ScoreBreakdown) -> str:
+        reasons = []
+        if total >= 85:
+            reasons.append("整体匹配度极高，强烈推荐")
+        elif total >= 70:
+            reasons.append("整体匹配度较好，建议进入面试")
+        elif total >= 50:
+            reasons.append("有一定匹配度，可进一步评估")
+        else:
+            reasons.append("匹配度偏低，建议参考后决定")
+        top = [s.name for s in top_skills[:3]]
+        if top:
+            reasons.append(f"核心技能匹配：{'、'.join(top)}")
+        if breakdown.education_bonus > 0:
+            reasons.append("学历符合要求")
+        if breakdown.experience_bonus > 0:
+            reasons.append(f"工作经验达标加分")
+        if breakdown.famous_company_bonus > 0:
+            reasons.append("有名企工作经历")
+        return "；".join(reasons)
 
     def match_all(self, resumes: List[Resume], jd: JobDescription,
                   weights: Optional[Dict] = None) -> List[MatchResult]:

@@ -97,3 +97,25 @@ class SkillCandidate(BaseModel):
 class PaginatedParams(BaseModel):
     page: int = 1
     page_size: int = 20
+
+
+class HRReview(BaseModel):
+    id: Optional[int] = None
+    job_id: int
+    resume_id: int
+    status: str = "pending"
+    note: str = ""
+    interview_advice: str = ""
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+
+
+class MatchResult(BaseModel):
+    resume: Resume
+    score: float
+    rank: int
+    score_breakdown: ScoreBreakdown
+    top_skills: List[SkillItem] = []
+    highlighted_snippets: List[str] = []
+    recommend_reason: str = ""
+    review: Optional[HRReview] = None

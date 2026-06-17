@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 from contextlib import contextmanager
 
-from server.models import Resume, JobDescription, JobSkillRequirement
+from server.models import Resume, JobDescription, JobSkillRequirement, HRReview
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "app.db"
 
@@ -46,6 +46,19 @@ def init_db():
                 is_active INTEGER DEFAULT 1,
                 created_at TEXT DEFAULT (datetime('now')),
                 updated_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS reviews (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id INTEGER NOT NULL,
+                resume_id INTEGER NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                note TEXT NOT NULL DEFAULT '',
+                interview_advice TEXT NOT NULL DEFAULT '',
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(job_id, resume_id)
             )
         """)
         conn.commit()
@@ -176,6 +189,56 @@ def delete_job(job_id: int) -> bool:
     with get_conn() as conn:
         cur = conn.execute("DELETE FROM jobs WHERE id=?", (job_id,))
         return cur.rowcount > 0
+
+
+def _review_from_row(row: sqlite3.Row) -> HRReview:
+    return HRReview(
+        id=row["id"],
+        job_id=row["job_id"],
+        resume_id=row["resume_id"],
+        status=row["status"] or "pending",
+        note=row["note"] or "",
+        interview_advice=row["interview_advice"] or "",
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
+def get_review(job_id: int, resume_id: int) -> Optional[HRReview]:
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM reviews WHERE job_id=? AND resume_id=?",
+            (job_id, resume_id),
+        ).fetchone()
+        return _review_from_row(row) if row else None
+
+
+def list_reviews_by_job(job_id: int) -> Dict[int, HRReview]:
+    with get_conn() as conn:
+        rows = conn.execute("SELECT * FROM reviews WHERE job_id=?", (job_id,)).fetchall()
+        return {r["resume_id"]: _review_from_row(r) for r in rows}
+
+
+def save_review(rev: HRReview) -> HRReview:
+    with get_conn() as conn:
+        c = conn.cursor()
+        existing = conn.execute(
+            "SELECT id FROM reviews WHERE job_id=? AND resume_id=?",
+            (rev.job_id, rev.resume_id),
+        ).fetchone()
+        if existing:
+            c.execute(
+                "UPDATE reviews SET status=?, note=?, interview_advice=?, updated_at=datetime('now') WHERE id=?",
+                (rev.status, rev.note, rev.interview_advice, existing["id"]),
+            )
+            rev.id = existing["id"]
+        else:
+            c.execute(
+                "INSERT INTO reviews (job_id, resume_id, status, note, interview_advice) VALUES (?, ?, ?, ?, ?)",
+                (rev.job_id, rev.resume_id, rev.status, rev.note, rev.interview_advice),
+            )
+            rev.id = c.lastrowid
+    return rev
 
 
 init_db()

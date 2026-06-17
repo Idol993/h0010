@@ -22,7 +22,7 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
     if ext == ".doc":
         return ResumeParseResponse(
             success=False,
-            error="老版 Word .doc 格式暂不支持，请另存为 .docx 格式后再上传",
+            error="老版 Word .doc 格式暂不支持，请另存为 .docx 后再上传",
             parse_time_ms=(time.time() - start) * 1000,
         )
     if ext not in ALLOWED_EXT:
