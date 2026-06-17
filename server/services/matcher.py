@@ -131,37 +131,49 @@ class MatcherEngine:
     def _highlight_snippets(r: Resume, jd: JobDescription, top_skills: Optional[List[SkillItem]] = None, top_n: int = 3) -> List[str]:
         if not r.raw_text:
             return []
-        highlight_words = set()
+        highlight_words: Dict[str, str] = {}
         for s in jd.skills:
-            highlight_words.add(s.skill.lower())
+            display = s.skill
+            highlight_words[s.skill.lower()] = display
             canon = skill_dict.normalize(s.skill)
             if canon:
-                highlight_words.add(canon.lower())
-                syns = [x.lower() for x in skill_dict._canonical_to_synonyms.get(canon, [])]
-                highlight_words.update(syns)
+                highlight_words[canon.lower()] = canon
+                for syn in skill_dict._canonical_to_synonyms.get(canon, []):
+                    highlight_words[syn.lower()] = display
         if top_skills:
             for ts in top_skills:
-                highlight_words.add(ts.name.lower())
+                highlight_words[ts.name.lower()] = ts.name
                 canon = skill_dict.normalize(ts.name)
                 if canon:
-                    highlight_words.add(canon.lower())
-                    syns = [x.lower() for x in skill_dict._canonical_to_synonyms.get(canon, [])]
-                    highlight_words.update(syns)
+                    highlight_words[canon.lower()] = ts.name
+                    for syn in skill_dict._canonical_to_synonyms.get(canon, []):
+                        highlight_words[syn.lower()] = ts.name
         if jd.required_education:
-            highlight_words.add(jd.required_education.lower())
+            highlight_words[jd.required_education.lower()] = jd.required_education
         if not highlight_words:
             return []
+        word_patterns = sorted(highlight_words.keys(), key=lambda x: -len(x))
+        regex_pattern = re.compile("|".join(rf"\b{re.escape(w)}\b" for w in word_patterns if w), re.IGNORECASE)
+
+        def _mark(text: str) -> str:
+            def _sub(m):
+                matched = m.group(0)
+                display = highlight_words.get(matched.lower(), matched)
+                return f'<span class="hl">{display}</span>'
+            return regex_pattern.sub(_sub, text)
+
         sentences = re.split(r"[。.!?！？\n]+", r.raw_text)
-        scored: List[Tuple[int, str]] = []
+        scored: List[Tuple[int, str, str]] = []
         for idx, sent in enumerate(sentences):
             s = sent.strip()
             if len(s) < 10 or len(s) > 300:
                 continue
             hits = sum(1 for w in highlight_words if w and w in s.lower())
             if hits > 0:
-                scored.append((hits, s))
+                marked = _mark(s)
+                scored.append((hits, s, marked))
         scored.sort(key=lambda x: -x[0])
-        return [s for _, s in scored[:top_n]]
+        return [marked for _, _, marked in scored[:top_n]]
 
     def match_one(self, r: Resume, jd: JobDescription, rank: int = 0,
                   weights: Optional[Dict] = None) -> MatchResult:

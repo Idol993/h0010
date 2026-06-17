@@ -64,9 +64,10 @@ def delete_job(job_id: int):
 
 @router.get("/skills/dict")
 def get_skill_dict():
+    all_skills = skill_dict.all_canonical()
     return {
-        "total_canonical": len(skill_dict.all_canonical()),
-        "canonical": skill_dict.all_canonical()[:200],
+        "total_canonical": len(all_skills),
+        "canonical": all_skills,
     }
 
 
@@ -74,8 +75,9 @@ def get_skill_dict():
 def add_skill_entry(canonical: str, synonyms: Optional[List[str]] = None):
     if not canonical or not canonical.strip():
         raise HTTPException(status_code=400, detail="技能名称不能为空")
-    skill_dict.add_skill(canonical.strip(), synonyms or [])
-    return {"ok": True, "canonical": canonical.strip()}
+    canon = canonical.strip()
+    skill_dict.add_skill(canon, synonyms or [])
+    return {"ok": True, "canonical": canon, "total": len(skill_dict.all_canonical())}
 
 
 @router.get("/skills/candidates")
@@ -86,4 +88,4 @@ def list_skill_candidates():
 @router.post("/skills/candidates/approve")
 def approve_candidate(term: str, canonical: Optional[str] = None):
     skill_dict.approve_candidate(term, canonical)
-    return {"ok": True}
+    return {"ok": True, "canonical": canonical or term, "total": len(skill_dict.all_canonical())}

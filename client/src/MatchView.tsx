@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import axios from "axios";
-import { JobDescription, MatchResponse, Resume, MatchResult } from "./types";
+import { JobDescription, MatchResponse, Resume, MatchResult, SkillItem, ScoreBreakdown } from "./types";
 
 interface Props {
   mode: "match" | "compare";
@@ -13,6 +13,8 @@ interface CompareJob {
   job_id: number;
   job_title: string;
   score: number;
+  top_skills: SkillItem[];
+  breakdown: ScoreBreakdown;
 }
 
 interface CompareItem {
@@ -108,11 +110,11 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
           <div>名企经历: <span className="val">+{result.score_breakdown.famous_company_bonus.toFixed(1)}</span></div>
         </div>
         {open && (
-          <div className="expand-detail">
+          <div className="expand-detail" onClick={(e) => e.stopPropagation()}>
             <div style={{ fontWeight: 600, marginBottom: 6 }}>命中片段：</div>
             {result.highlighted_snippets.length > 0 ? (
               result.highlighted_snippets.map((s, i) => (
-                <div key={i} className="snippet">{s}</div>
+                <div key={i} className="snippet" dangerouslySetInnerHTML={{ __html: s }} />
               ))
             ) : (
               <div style={{ color: "var(--text-muted)" }}>无</div>
@@ -217,11 +219,28 @@ export default function MatchView({ mode, jobs, resumes }: Props) {
             <div className="candidate-grid">
               {compareData.map((c) => (
                 <div key={c.resume_id} className="candidate-card">
-                  <div style={{ fontWeight: 600, marginBottom: 8 }}>{c.name}</div>
+                  <div style={{ fontWeight: 600, marginBottom: 12 }}>{c.name}</div>
                   {c.jobs.map((j) => (
-                    <div key={j.job_id} style={{ display: "flex", justifyContent: "space-between", marginTop: 6, fontSize: 14 }}>
-                      <span>{j.job_title}</span>
-                      <span className="badge-score">{j.score.toFixed(1)}</span>
+                    <div key={j.job_id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: "1px solid var(--border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 14 }}>
+                        <span style={{ fontWeight: 500 }}>{j.job_title}</span>
+                        <span className="badge-score">{j.score.toFixed(1)}</span>
+                      </div>
+                      <div style={{ marginBottom: 6 }}>
+                        {j.top_skills && j.top_skills.length > 0 ? (
+                          j.top_skills.map((s, i) => (
+                            <span key={i} className="skill-tag">{s.name}</span>
+                          ))
+                        ) : (
+                          <span style={{ fontSize: 12, color: "var(--text-muted)" }}>无命中技能</span>
+                        )}
+                      </div>
+                      <div className="breakdown" style={{ fontSize: 11, marginTop: 4, paddingTop: 4, borderTop: "1px dashed var(--border)" }}>
+                        <div>语义相似度: <span className="val">{j.breakdown.semantic_similarity.toFixed(1)}</span></div>
+                        <div>经验加分: <span className="val">+{j.breakdown.experience_bonus.toFixed(1)}</span></div>
+                        <div>学历匹配: <span className="val">+{j.breakdown.education_bonus.toFixed(1)}</span></div>
+                        <div>名企经历: <span className="val">+{j.breakdown.famous_company_bonus.toFixed(1)}</span></div>
+                      </div>
                     </div>
                   ))}
                 </div>

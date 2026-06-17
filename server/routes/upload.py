@@ -19,6 +19,12 @@ async def upload_resume(request: Request, file: UploadFile = File(...)):
     start = time.time()
     filename = file.filename or "unknown"
     ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext == ".doc":
+        return ResumeParseResponse(
+            success=False,
+            error="老版 Word .doc 格式暂不支持，请另存为 .docx 格式后再上传",
+            parse_time_ms=(time.time() - start) * 1000,
+        )
     if ext not in ALLOWED_EXT:
         return ResumeParseResponse(success=False, error=f"不支持的文件格式: {ext}",
                                    parse_time_ms=(time.time() - start) * 1000)
